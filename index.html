@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Texas Blowout on Turf — Live Tracker</title>
+<style>
+  :root{
+    --bg:#0e1116; --surface:#161b22; --surface-2:#1c2230; --line:#262d3a;
+    --text:#e6edf3; --text-2:#9aa6b4; --text-3:#6b7686;
+    --accent:#378ADD; --accent-soft:#1b3654;
+    --win:#3fb98a; --loss:#e2685f; --final:#9fe1cb; --live:#f0b347;
+    --radius:10px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f6f7f9; --surface:#ffffff; --surface-2:#f0f2f5; --line:#e2e6ec;
+      --text:#1a1f29; --text-2:#5a6675; --text-3:#8a96a6;
+      --accent:#1f6fc4; --accent-soft:#dcebfb; --accent-soft:#dde9f8;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:0 0 4rem}
+  .wrap{max-width:760px;margin:0 auto;padding:1.5rem 1rem}
+  .header{margin-bottom:1.25rem}
+  .event-tag{display:inline-flex;align-items:center;gap:5px;background:var(--surface-2);
+    color:var(--text-2);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;
+    margin-bottom:10px;border:1px solid var(--line);letter-spacing:.3px;text-transform:uppercase}
+  .header h1{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .header p{font-size:13px;color:var(--text-2);margin-top:4px}
+
+  .status-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:9px 14px;margin-bottom:1.25rem;flex-wrap:wrap}
+  .status-left{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text-3)}
+  .dot.live{background:var(--win);box-shadow:0 0 0 3px rgba(63,185,138,.25)}
+  .dot.stale{background:var(--live)}
+  .status-text{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .status-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .countdown{font-size:11px;color:var(--text-3)}
+  .auto-badge{font-size:10px;background:var(--accent-soft);color:var(--accent);
+    border:1px solid transparent;padding:4px 9px;border-radius:12px;font-weight:600;white-space:nowrap}
+  .refresh-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--line);padding:6px 12px;border-radius:8px;
+    color:var(--text);font-weight:500}
+  .refresh-btn:hover{border-color:var(--accent)}
+  .refresh-btn:disabled{opacity:.5;cursor:default}
+
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:1.25rem;overflow-x:auto}
+  .tab{padding:9px 16px;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;
+    border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;
+    display:inline-flex;align-items:center;gap:6px}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .tab svg{width:15px;height:15px}
+  .panel{display:none;animation:fade .2s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+  .filter-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem}
+  .filter-row input{flex:1;font-size:13px;padding:9px 12px;border:1px solid var(--line);
+    border-radius:8px;background:var(--surface);color:var(--text);font-family:var(--font)}
+  .filter-row input::placeholder{color:var(--text-3)}
+  .filter-row input:focus{outline:none;border-color:var(--accent)}
+  .clear-btn{font-size:18px;color:var(--text-3);cursor:pointer;background:none;border:none;
+    padding:4px 8px;line-height:1}
+  .clear-btn:hover{color:var(--text)}
+
+  .pills{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+  .pill{flex:1;min-width:90px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:10px 14px;text-align:center}
+  .pill .v{font-size:22px;font-weight:700}
+  .pill .l{font-size:11px;color:var(--text-2);margin-top:2px}
+
+  .day-head{font-size:13px;font-weight:700;margin:1.25rem 0 8px;padding-bottom:6px;
+    border-bottom:1px solid var(--line)}
+  .section-label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;
+    letter-spacing:.7px;margin:1.25rem 0 8px}
+
+  .game{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:11px 14px;margin-bottom:8px}
+  .game.final{opacity:.82}
+  .game-meta{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
+  .gnum{font-size:11px;color:var(--text-3);font-weight:600}
+  .field{font-size:11px;color:var(--text-2);background:var(--surface-2);padding:2px 8px;border-radius:10px}
+  .time{font-size:11px;color:var(--text-2)}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+    padding:3px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.3px}
+  .chip.final{background:rgba(63,185,138,.16);color:var(--win)}
+  .chip.live{background:rgba(240,179,71,.16);color:var(--live)}
+  .chip.up{background:var(--surface-2);color:var(--text-2)}
+  .score-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+  .tname{font-size:14px;font-weight:600}
+  .tname.r{text-align:right}
+  .tname.win{color:var(--win)}
+  .tname.lose{color:var(--text-3);font-weight:500}
+  .score{font-size:23px;font-weight:700;text-align:center;min-width:54px;font-variant-numeric:tabular-nums}
+  .score.up{font-size:13px;color:var(--text-3);font-weight:500}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{font-size:11px;font-weight:700;color:var(--text-3);text-align:left;padding:7px 8px;
+    border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.4px}
+  th.n{text-align:right}
+  td{padding:8px;border-bottom:1px solid var(--line)}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  .rank{font-size:12px;color:var(--text-3)}
+  .elim{font-size:10px;background:rgba(226,104,95,.16);color:var(--loss);padding:2px 7px;
+    border-radius:8px;font-weight:700;margin-left:6px}
+
+  .bracket-note{font-size:12px;color:var(--text-2);background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius);padding:11px 14px;margin-bottom:1rem;
+    display:flex;gap:8px;align-items:flex-start}
+  .bracket-note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;color:var(--accent)}
+  .btabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+  .btab{font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--line);
+    background:var(--surface);color:var(--text-2);font-weight:600}
+  .btab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .round-head{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;
+    letter-spacing:.5px;padding:10px 0 4px;border-top:1px solid var(--line);margin-top:6px}
+
+  .loading{text-align:center;padding:3rem 1rem;color:var(--text-2);font-size:14px}
+  .spinner{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);
+    border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{animation:spin 1s linear infinite}
+  .error{background:rgba(226,104,95,.12);border:1px solid rgba(226,104,95,.3);color:var(--loss);
+    border-radius:var(--radius);padding:1rem;font-size:13px;margin:1rem 0}
+  .empty{font-size:13px;color:var(--text-2);padding:1.5rem 0;text-align:center}
+  .footer{text-align:center;font-size:11px;color:var(--text-3);margin-top:2rem;
+    border-top:1px solid var(--line);padding-top:1rem}
+  .footer a{color:var(--text-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <span class="event-tag">NCS Fastpitch · 10U Open</span>
+    <h1>Texas Blowout on Turf</h1>
+    <p>June 12–15, 2026 · Celina, TX · Live tournament tracker</p>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-left">
+      <span class="dot" id="dot"></span>
+      <span class="status-text" id="status-text">Loading scores…</span>
+    </div>
+    <div class="status-right">
+      <span class="countdown" id="countdown"></span>
+      <span class="auto-badge">Auto every 30m</span>
+      <button class="refresh-btn" id="refresh" onclick="manualRefresh()">
+        <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('schedule',event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</button>
+    <button class="tab" onclick="switchTab('standings',event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 16v-5M12 16V8M17 16v-9"/></svg>Standings</button>
+    <button class="tab" onclick="switchTab('bracket',event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6v5H3zM3 14h6v5H3zM15 9h6v6h-6zM9 7.5h3v9h3"/></svg>Bracket</button>
+  </div>
+
+  <div id="panel-schedule" class="panel active"><div id="schedule-content"><div class="loading"><div class="spinner"></div>Loading schedule…</div></div></div>
+  <div id="panel-standings" class="panel"><div id="standings-content"><div class="loading"><div class="spinner"></div>Loading standings…</div></div></div>
+  <div id="panel-bracket" class="panel"><div id="bracket-content"><div class="loading"><div class="spinner"></div>Loading bracket…</div></div></div>
+
+  <div class="footer">
+    Data from <a href="https://playncs.com/fastpitch/Events/Schedule/11618/10u-texas-blowout-on-turf" target="_blank" rel="noopener">playncs.com</a>
+    · refreshes automatically every 30 minutes
+  </div>
+</div>
+
+<script>
+const API = '/api/tournament';
+const POLL = 2 * 60 * 1000;     // browser re-checks the cache every 2 min
+const STALE_MS = 30 * 60 * 1000;
+let appData = null, activeBracket = null, scheduleFilter = '';
+let pollTimer = null, countdownTimer = null, nextAt = null;
+
+function switchTab(tab, e){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  e.target.closest('.tab').classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+function switchBracket(b, e){
+  activeBracket=b;
+  document.querySelectorAll('.btab').forEach(t=>t.classList.remove('active'));
+  e.target.classList.add('active');
+  if(appData) renderBracket(appData.bracket);
+}
+function setStatus(cls, txt){
+  document.getElementById('dot').className='dot '+cls;
+  document.getElementById('status-text').textContent=txt;
+}
+function startCountdown(target){
+  if(countdownTimer) clearInterval(countdownTimer);
+  nextAt=target;
+  countdownTimer=setInterval(()=>{
+    const r=nextAt-Date.now();
+    if(r<=0){document.getElementById('countdown').textContent='';return;}
+    const m=Math.floor(r/60000), s=Math.floor((r%60000)/1000);
+    document.getElementById('countdown').textContent=`Next check ${m}:${String(s).padStart(2,'0')}`;
+  },1000);
+}
+
+async function load(force){
+  const icon=document.getElementById('refresh-icon');
+  const btn=document.getElementById('refresh');
+  if(force){icon.classList.add('spin');btn.disabled=true;setStatus('stale','Fetching latest scores…');}
+  try{
+    const res=await fetch(API+(force?'?t='+Date.now():''),{cache:force?'no-store':'default'});
+    if(!res.ok) throw new Error('Server returned '+res.status);
+    const data=await res.json();
+    if(data.error) throw new Error(data.error);
+    appData=data;
+    renderAll();
+    const age=data.fetchedAt?Date.now()-data.fetchedAt:0;
+    const when=new Date(data.fetchedAt||Date.now()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    if(data.stale || age>STALE_MS){
+      setStatus('stale','Showing last known scores from '+when);
+    }else{
+      const mins=Math.round(age/60000);
+      setStatus('live', mins<1?'Scores updated just now':`Scores updated ${mins} min ago · ${when}`);
+    }
+    startCountdown(Date.now()+POLL);
+  }catch(err){
+    if(appData){setStatus('stale','Update failed — showing cached scores');}
+    else{showError(err.message);}
+  }
+  icon.classList.remove('spin');btn.disabled=false;
+}
+function manualRefresh(){ load(true); }
+
+function showError(msg){
+  ['schedule','standings','bracket'].forEach(id=>{
+    document.getElementById(id+'-content').innerHTML=`<div class="error"><strong>Couldn't load tournament data.</strong><br>${msg||'Try refreshing in a moment.'}</div>`;
+  });
+  setStatus('stale','Connection problem');
+}
+
+function renderAll(){
+  if(!appData) return;
+  renderSchedule(appData.schedule);
+  renderStandings(appData.standings);
+  renderBracket(appData.bracket);
+}
+
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function gameCard(g){
+  const final=g.status==='final', live=g.status==='live';
+  let t1='tname', t2='tname r';
+  if(final && g.score1!=null && g.score2!=null){
+    if(g.score1>g.score2){t1+=' win';t2+=' lose';}
+    else if(g.score2>g.score1){t2+=' win';t1+=' lose';}
+  }
+  const chip = final?'<span class="chip final">Final</span>'
+    : live?'<span class="chip live">● Live</span>'
+    : `<span class="chip up">${esc(g.time)}</span>`;
+  const scoreCell = (final||live)
+    ? `<div class="score">${g.score1??'-'} – ${g.score2??'-'}</div>`
+    : '<div class="score up">vs</div>';
+  return `<div class="game ${final?'final':''}">
+    <div class="game-meta">
+      <span class="gnum">G${esc(g.gameNum)}</span>
+      ${g.field?`<span class="field">${esc(g.field)}</span>`:''}
+      ${chip}
+    </div>
+    <div class="score-row">
+      <div class="${t1}">${esc(g.team1)}</div>
+      ${scoreCell}
+      <div class="${t2}">${esc(g.team2)}</div>
+    </div>
+  </div>`;
+}
+
+function renderSchedule(data){
+  const el=document.getElementById('schedule-content');
+  if(!data||!data.games||!data.games.length){el.innerHTML='<div class="empty">Schedule not posted yet.</div>';return;}
+  const order=['Thu','Fri','Sat','Sun','Mon'];
+  const labels={Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday',Mon:'Monday'};
+  const days={};
+  data.games.forEach(g=>{const d=g.date||'TBD';(days[d]=days[d]||[]).push(g);});
+  const finals=data.games.filter(g=>g.status==='final').length;
+  const live=data.games.filter(g=>g.status==='live').length;
+  const up=data.games.filter(g=>g.status==='upcoming').length;
+
+  let h=`<div class="filter-row">
+    <input type="text" id="search" placeholder="Filter by team name…" value="${esc(scheduleFilter)}" oninput="filterSchedule(this.value)">
+    ${scheduleFilter?'<button class="clear-btn" onclick="filterSchedule(\'\')">&times;</button>':''}
+  </div>
+  <div class="pills">
+    <div class="pill"><div class="v">${data.games.length}</div><div class="l">Games</div></div>
+    <div class="pill"><div class="v">${finals}</div><div class="l">Final</div></div>
+    <div class="pill"><div class="v" style="${live?'color:var(--live)':''}">${live||up}</div><div class="l">${live?'Live now':'Upcoming'}</div></div>
+  </div>`;
+
+  const q=scheduleFilter.toLowerCase();
+  order.filter(d=>days[d]).concat(Object.keys(days).filter(d=>!order.includes(d))).forEach(day=>{
+    const list=days[day].filter(g=>!q||(g.team1||'').toLowerCase().includes(q)||(g.team2||'').toLowerCase().includes(q));
+    if(!list.length) return;
+    h+=`<div class="day-head">${labels[day]||day}</div>`+list.map(gameCard).join('');
+  });
+  el.innerHTML=h;
+}
+function filterSchedule(v){
+  scheduleFilter=v;
+  renderSchedule(appData.schedule);
+  const i=document.getElementById('search');
+  if(i){i.focus();i.setSelectionRange(v.length,v.length);}
+}
+
+function renderStandings(data){
+  const el=document.getElementById('standings-content');
+  if(!data||!data.pools||!data.pools.length){el.innerHTML='<div class="empty">Standings will appear once pool play begins.</div>';return;}
+  let h='';
+  data.pools.forEach(pool=>{
+    h+=`<div class="section-label">${esc(pool.poolName||'Standings')}</div>
+    <table><thead><tr><th>#</th><th>Team</th><th class="n">W</th><th class="n">L</th><th class="n">T</th><th class="n">RS</th><th class="n">RA</th><th class="n">Pts</th></tr></thead><tbody>`;
+    (pool.teams||[]).forEach((t,i)=>{
+      h+=`<tr>
+        <td><span class="rank">${t.rank||i+1}</span></td>
+        <td>${esc(t.name)}${t.eliminated?'<span class="elim">Out</span>':''}</td>
+        <td class="n">${t.w??0}</td><td class="n">${t.l??0}</td><td class="n">${t.t??0}</td>
+        <td class="n">${t.rs??0}</td><td class="n">${t.ra??0}</td>
+        <td class="n" style="color:var(--text-2)">${(t.pts||0).toLocaleString()}</td>
+      </tr>`;
+    });
+    h+='</tbody></table>';
+  });
+  el.innerHTML=h;
+}
+
+function renderBracket(data){
+  const el=document.getElementById('bracket-content');
+  if(!data||!data.brackets||!data.brackets.length){
+    el.innerHTML='<div class="empty">Brackets are set after pool play finishes (Saturday). Check back then to see seeding.</div>';return;
+  }
+  const names=data.brackets.map(b=>b.name);
+  if(!activeBracket || !names.some(n=>n.toLowerCase()===activeBracket)){
+    activeBracket = names[0].toLowerCase();
+  }
+  let h=`<div class="bracket-note">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <span>Teams seed into Diamond, Gold, or Silver based on how they finish pool play. Pick a bracket below.</span>
+  </div><div class="btabs">`;
+  names.forEach(n=>{h+=`<button class="btab ${n.toLowerCase()===activeBracket?'active':''}" onclick="switchBracket('${n.toLowerCase()}',event)">${esc(n)}</button>`;});
+  h+='</div>';
+
+  const active=data.brackets.find(b=>b.name.toLowerCase()===activeBracket)||data.brackets[0];
+  if(active){
+    const rounds={};
+    (active.games||[]).forEach(g=>{const r=g.round||'Games';(rounds[r]=rounds[r]||[]).push(g);});
+    const ro=['Round of 16','Quarterfinals','Semifinals','Championship bracket','Championship','Elimination','Consolation'];
+    Object.keys(rounds).sort((a,b)=>{const ai=ro.indexOf(a),bi=ro.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi);}).forEach(r=>{
+      h+=`<div class="round-head">${esc(r)}</div>`+rounds[r].map(g=>{
+        const final=g.status==='final',live=g.status==='live';
+        let t1='tname',t2='tname r';
+        if(final&&g.score1!=null&&g.score2!=null){
+          if(g.score1>g.score2){t1+=' win';t2+=' lose';}else if(g.score2>g.score1){t2+=' win';t1+=' lose';}
+        }
+        const chip=final?'<span class="chip final">Final</span>':live?'<span class="chip live">● Live</span>':'';
+        const sc=(final||live)?`<div class="score">${g.score1??'-'} – ${g.score2??'-'}</div>`:'<div class="score up">vs</div>';
+        return `<div class="game ${final?'final':''}">
+          <div class="game-meta"><span class="gnum">G${esc(g.gameNum)}</span>${g.field?`<span class="field">${esc(g.field)}</span>`:''}<span class="time">${esc(g.date)} ${esc(g.time)}</span>${chip}</div>
+          <div class="score-row"><div class="${t1}">${esc(g.team1)}</div>${sc}<div class="${t2}">${esc(g.team2)}</div></div>
+        </div>`;
+      }).join('');
+    });
+  }
+  el.innerHTML=h;
+}
+
+// initial load, then quiet poll of the shared cache
+load(false);
+pollTimer=setInterval(()=>load(false), POLL);
+</script>
+</body>
+</html>

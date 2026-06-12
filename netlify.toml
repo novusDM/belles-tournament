@@ -1,0 +1,16 @@
+# Netlify configuration for the tournament tracker.
+# No build step needed — the site is a single static index.html plus functions.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Modern functions runtime (ESM, Response objects, scheduled functions).
+[functions]
+  node_bundler = "esbuild"
+
+# Friendly redirect so you can hit /api/tournament instead of the long path.
+[[redirects]]
+  from = "/api/tournament"
+  to = "/.netlify/functions/get-tournament"
+  status = 200

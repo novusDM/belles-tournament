@@ -1,0 +1,11 @@
+{
+  "name": "ncs-tournament-tracker",
+  "version": "1.0.0",
+  "description": "Live tournament tracker for the NCS 10U Texas Blowout on Turf",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^8.2.0",
+    "cheerio": "^1.2.0"
+  }
+}
