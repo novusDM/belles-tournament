@@ -57,9 +57,14 @@ Everything else is generic.
   Mercado" / "8  2033 Texas Glory") and also puts the pair in the middle cell
   ("4 - 8"); the parser reads both. Team names with leading years like "2033
   Texas Glory" are preserved correctly.
-- **Bracket names are generic.** Some events use "Diamond / Gold / Silver",
-  others use names like "10U Elite" — the parser picks up whatever NCS labels
-  the bracket sections, no hardcoding.
+- **Bracket structure is real and live.** It parses NCS's printable bracket
+  (Diamond seeds 1–16, Gold 17–32, Silver 33+), each with a winners side and an
+  elimination side, including every game's date, time, field, and the
+  Winner-of/Loser-of progression. Seed slots show as "Seed N" until pool play
+  sets the final standings; the moment NCS assigns seeds (populates the rank
+  column on the standings page), seed N auto-resolves to the team ranked N.
+  Scores are merged in from the regular bracket page by bracket + game number
+  as games complete.
 - **"Eliminated"** is computed best-effort from the elimination brackets: a team
   is flagged out once it loses a final bracket game and appears in no remaining
   game. Double-elim edge cases may lag by a game.

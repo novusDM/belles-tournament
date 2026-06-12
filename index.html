@@ -342,7 +342,7 @@ function renderStandings(data){
 function renderBracket(data){
   const el=document.getElementById('bracket-content');
   if(!data||!data.brackets||!data.brackets.length){
-    el.innerHTML='<div class="empty">Brackets are set after pool play finishes (Saturday). Check back then to see seeding.</div>';return;
+    el.innerHTML='<div class="empty">Bracket structure is loading. If this persists, NCS may not have posted the printable bracket yet.</div>';return;
   }
   const names=data.brackets.map(b=>b.name);
   if(!activeBracket || !names.some(n=>n.toLowerCase()===activeBracket)){
@@ -350,7 +350,7 @@ function renderBracket(data){
   }
   let h=`<div class="bracket-note">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <span>Teams seed into Diamond, Gold, or Silver based on how they finish pool play. Pick a bracket below.</span>
+    <span>Diamond (seeds 1–16), Gold (17–32), and Silver (33+). Seed slots fill with team names once pool play sets the final seeding Saturday. Each bracket has a winners side and an elimination side.</span>
   </div><div class="btabs">`;
   names.forEach(n=>{h+=`<button class="btab ${n.toLowerCase()===activeBracket?'active':''}" onclick="switchBracket('${n.toLowerCase()}',event)">${esc(n)}</button>`;});
   h+='</div>';
@@ -359,7 +359,7 @@ function renderBracket(data){
   if(active){
     const rounds={};
     (active.games||[]).forEach(g=>{const r=g.round||'Games';(rounds[r]=rounds[r]||[]).push(g);});
-    const ro=['Round of 16','Quarterfinals','Semifinals','Championship bracket','Championship','Elimination','Consolation'];
+    const ro=['Winners Bracket','Elimination Bracket','Championship','Games'];
     Object.keys(rounds).sort((a,b)=>{const ai=ro.indexOf(a),bi=ro.indexOf(b);return (ai<0?99:ai)-(bi<0?99:bi);}).forEach(r=>{
       h+=`<div class="round-head">${esc(r)}</div>`+rounds[r].map(g=>{
         const final=g.status==='final',live=g.status==='live';
